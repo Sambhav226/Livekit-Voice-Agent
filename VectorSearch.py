@@ -182,22 +182,23 @@ class VectorSearch:
                 logger.debug("No category filter applied")
             
             # Execute query with retry logic
-            # max_retries = 3
-            # for attempt in range(max_retries):
-            #try:
-            logger.debug(f"Query attempt {attempt + 1}/{max_retries}")
-            result = self.index.query(**query_params)
-            
-            logger.debug(f"Pinecone query returned {len(result.get('matches', []))} matches")
-            for i, match in enumerate(result.get('matches', [])[:3]):  # Log first 3 matches
-                logger.debug(f"Match {i}: id={match.get('id')}, score={match.get('score')}, metadata_keys={list(match.get('metadata', {}).keys())}")
-            
-            return result
-                
-            #except Exception as retry_error:
-                #logger.warning(f"Query attempt {attempt + 1} failed: {retry_error}")
-                # if attempt == max_retries - 1:
-                #     raise retry_error
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    logger.debug(f"Query attempt {attempt + 1}/{max_retries}")
+                    result = self.index.query(**query_params)
+                    
+                    logger.debug(f"Pinecone query returned {len(result.get('matches', []))} matches")
+                    for i, match in enumerate(result.get('matches', [])[:3]):  # Log first 3 matches
+                        logger.debug(f"Match {i}: id={match.get('id')}, score={match.get('score')}, metadata_keys={list(match.get('metadata', {}).keys())}")
+                    
+                    return result
+                    
+                except Exception as retry_error:
+                    logger.warning(f"Query attempt {attempt + 1} failed: {retry_error}")
+                    if attempt == max_retries - 1:
+                        raise retry_error
+                    time.sleep(1)  # Wait before retry
             
         except Exception as e:
             logger.error(f"Pinecone query failed after all retries: {str(e)}")
@@ -297,7 +298,7 @@ class VectorSearch:
             logger.debug(f"Step 6: Filtering by threshold {rerank_threshold}")
             filtered = []
             for item in reranked:
-                score = item.get("relevance_score", 1.0)
+                score = item.get("relevance_score", 0.2)
                 if score >= rerank_threshold:
                     filtered.append(item["document"])
                     logger.debug(f"Document passed threshold: score={score}")
