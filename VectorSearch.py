@@ -26,7 +26,7 @@ class VectorSearch:
         
         # Use REST API instead of gRPC
         self.pc = Pinecone(api_key=PINECONE_API_KEY)
-        self.index = self.pc.Index(name=self.index_name)
+        self.index = self.pc.Index(host=os.getenv("PINECONE_HOST"))
         
         self.bm25 = None 
 
@@ -275,7 +275,9 @@ class VectorSearch:
                         **doc_metadata  # Pass remaining metadata as kwargs
                     )
                     docs.append(doc)
-                    logger.debug(f"Successfully created Document for {m.get('id')}")
+                    short_preview = "\n".join(text.strip().splitlines()[:2])  # First 2 lines only
+                    logger.debug(f"Document Preview ({m.get('id')}):\n{short_preview}\n")
+
                 except Exception as e:
                     logger.warning(f"Failed to construct Document for {m.get('id')}: {e}")
                     logger.debug(f"Metadata keys: {list(metadata.keys())}")
